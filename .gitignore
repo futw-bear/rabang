@@ -5,6 +5,7 @@ node_modules
 out
 dist
 *.tgz
+!fubon-neo-2.2.8.tgz
 
 # code coverage
 coverage
