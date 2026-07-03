@@ -1,0 +1,12 @@
+.env
+.git
+.gitignore
+node_modules
+log
+cert.p12
+*.p12
+*.pfx
+Dockerfile
+README.md
+AGENTS.md
+CLAUDE.md

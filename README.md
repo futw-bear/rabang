@@ -33,6 +33,45 @@ SERVER_TOKEN=optional_api_bearer_token
 Authorization: Bearer <token>
 ```
 
+## Docker
+
+建置 image：
+
+```bash
+docker build -t rabang .
+```
+
+Docker image 內建的憑證預設路徑為 `/certs/fubon.p12`，也就是預設：
+
+```bash
+FUBON_CERT=/certs/fubon.p12
+```
+
+建議用 readonly volume 掛入憑證檔：
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e FUBON_USER=your_personal_id \
+  -e FUBON_PASSWORD=your_password \
+  -e FUBON_CERT_PASS=optional_certificate_password \
+  -e SERVER_TOKEN=optional_api_bearer_token \
+  -v /absolute/path/to/cert.p12:/certs/fubon.p12:ro \
+  rabang
+```
+
+若要改用 API key：
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e FUBON_USER=your_personal_id \
+  -e FUBON_APIKEY=your_api_key \
+  -e FUBON_CERT_PASS=optional_certificate_password \
+  -v /absolute/path/to/cert.p12:/certs/fubon.p12:ro \
+  rabang
+```
+
 ## 專案結構
 
 - `index.ts`：服務啟動流程與關閉處理
