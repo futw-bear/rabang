@@ -166,6 +166,36 @@ WebSocket client 連線到 `/ws`，同樣需要 Bearer Token。Client 傳送的 
 websocat -H='Authorization: Bearer <token>' ws://localhost:3000/ws
 ```
 
+連線後會先收到 `ready` message。接著可以在 `websocat` 互動模式中貼上訂閱訊息：
+
+```json
+{"event":"subscribe","data":{"channel":"trades","symbol":"2330"}}
+```
+
+也可以一次訂閱多個 symbol：
+
+```json
+{"event":"subscribe","data":{"channel":"trades","symbols":["2330","2317"]}}
+```
+
+查詢目前 SDK subscriptions：
+
+```json
+{"event":"subscriptions","data":{}}
+```
+
+取消訂閱時使用 SDK 回傳的 subscription id：
+
+```json
+{"event":"unsubscribe","data":{"id":"<subscription-id>"}}
+```
+
+期權 WebSocket client 範例：
+
+```json
+{"event":"subscribe","data":{"market":"futopt","channel":"trades","symbol":"TXFG6"}}
+```
+
 ## Trading API
 
 Trading API 使用已登入的 FubonSDK session。預設使用登入後第一個 account；也可以用 query parameters 指定帳戶：
