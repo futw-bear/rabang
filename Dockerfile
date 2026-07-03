@@ -2,6 +2,11 @@ FROM oven/bun:1.3.14
 
 WORKDIR /app
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates \
+  && update-ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV FUBON_CERT=/certs/fubon.p12

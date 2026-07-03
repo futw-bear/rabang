@@ -56,7 +56,7 @@ docker run --rm \
   -e FUBON_PASSWORD=your_password \
   -e FUBON_CERT_PASS=optional_certificate_password \
   -e SERVER_TOKEN=optional_api_bearer_token \
-  -v /absolute/path/to/cert.p12:/certs/fubon.p12:ro \
+  -v /path/to/cert.p12:/certs/fubon.p12:ro \
   rabang
 ```
 
