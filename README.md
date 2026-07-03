@@ -110,4 +110,64 @@ Use `market: "futopt"` inside `data` to subscribe through the futures and option
 }
 ```
 
+Trading accounting APIs use the authenticated FubonSDK session. The first authenticated account is used by default; add `account`, `branchNo`, or `accountType` query parameters to select a specific account.
+
+```bash
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/accounts"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/accounting/inventories"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/accounting/settlement?range=3d"
+```
+
+Trading stock query APIs also use the authenticated FubonSDK session and the same account selection query parameters:
+
+```bash
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/order-results"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/order-results-detail"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/order-history?startDate=20260701&endDate=20260703"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/filled-history?startDate=20260701&endDate=20260703"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/batch-order-lists"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/batch-order-detail?functionType=0&date=20260703&batchSeqNo=<batch-seq-no>"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/margin-quota?symbol=2330"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/daytrade-and-stock-info?symbol=2330"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/symbol-quote?symbol=2330&marketType=Common"
+
+curl \
+  -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/trading/stock/symbol-snapshot?marketType=Common&stockTypes=Stock,EtfAndEtn"
+```
+
 This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.

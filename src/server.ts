@@ -6,6 +6,8 @@ import { handleHistorical } from "./routes/historical";
 import { handleIntraday } from "./routes/intraday";
 import { handleSnapshot } from "./routes/snapshot";
 import { handleTechnical } from "./routes/technical";
+import { handleTradingAccounting } from "./routes/trading-accounting";
+import { handleTradingStock } from "./routes/trading-stock";
 import type { ServerContext } from "./types";
 import { MarketDataWebSocketBridge, type MarketDataSocketData } from "./websocket/market-data";
 
@@ -48,6 +50,16 @@ export function startServer(port: number, context: ServerContext): Bun.Server<Ma
       const intradayResponse = await handleIntraday(req, url, context);
       if (intradayResponse) {
         return intradayResponse;
+      }
+
+      const tradingAccountingResponse = handleTradingAccounting(req, url, context);
+      if (tradingAccountingResponse) {
+        return tradingAccountingResponse;
+      }
+
+      const tradingStockResponse = handleTradingStock(req, url, context);
+      if (tradingStockResponse) {
+        return tradingStockResponse;
       }
 
       if (url.pathname === "/ws") {

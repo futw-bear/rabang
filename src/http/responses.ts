@@ -7,6 +7,15 @@ export function notFoundResponse(): Response {
   );
 }
 
+export function badRequestResponse(message: string): Response {
+  return Response.json(
+    {
+      error: message,
+    },
+    { status: 400 }
+  );
+}
+
 export function upstreamErrorResponse(error: unknown): Response {
   const message = error instanceof Error ? error.message : "Unexpected error";
 
