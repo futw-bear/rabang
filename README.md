@@ -1,6 +1,6 @@
-# rabang
+# Rabang
 
-這個服務用來把 Fubon Neo SDK 包成 HTTP / WebSocket API，讓行動 App 可以透過網路呼叫 SDK 功能，而不需要直接在行動端載入 Neo SDK。
+將 Fubun Neo SDK 轉換為普通的 HTTP API 與 Websocket。
 
 ## 安裝
 
@@ -31,6 +31,45 @@ SERVER_TOKEN=optional_api_bearer_token
 
 ```bash
 Authorization: Bearer <token>
+```
+
+## Docker
+
+建置 image：
+
+```bash
+docker build -t rabang .
+```
+
+Docker image 內建的憑證預設路徑為 `/certs/fubon.p12`，也就是預設：
+
+```bash
+FUBON_CERT=/certs/fubon.p12
+```
+
+建議用 readonly volume 掛入憑證檔：
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e FUBON_USER=your_personal_id \
+  -e FUBON_PASSWORD=your_password \
+  -e FUBON_CERT_PASS=optional_certificate_password \
+  -e SERVER_TOKEN=optional_api_bearer_token \
+  -v /path/to/cert.p12:/certs/fubon.p12:ro \
+  rabang
+```
+
+若要改用 API key：
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e FUBON_USER=your_personal_id \
+  -e FUBON_APIKEY=your_api_key \
+  -e FUBON_CERT_PASS=optional_certificate_password \
+  -v /absolute/path/to/cert.p12:/certs/fubon.p12:ro \
+  rabang
 ```
 
 ## 專案結構
@@ -194,3 +233,7 @@ curl \
   -H "Authorization: Bearer <token>" \
   "http://localhost:3000/trading/stock/symbol-snapshot?marketType=Common&stockTypes=Stock,EtfAndEtn"
 ```
+
+## 附註
+
+Rabang 是太魯閣族語中稱呼台灣黑熊胸口白色 V 字型條文的詞彙，而 "Ana rabang kida." 則是表達「真是太好了」的意思：如果這個專案能為你省下時間就太好了。
