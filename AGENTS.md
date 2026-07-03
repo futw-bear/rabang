@@ -17,18 +17,19 @@ Keep the server boundary explicit: mobile clients should communicate with this s
 
 ## Project Structure
 
-- `index.ts` is the current application entrypoint.
+- `index.ts` is the service bootstrap. Keep it limited to reading config, authenticating, starting the server, and shutdown wiring.
 - `package.json` declares the local `fubon-neo` dependency from `fubon-neo-2.2.8.tgz`.
-- `README.md` contains minimal setup and run instructions.
+- `README.md` contains setup, API, WebSocket, and curl usage examples.
 - `CLAUDE.md` contains Bun-specific development guidance.
+- `src/config.ts` owns environment variables, the HTTP port, and `SERVER_TOKEN` generation.
+- `src/fubon/session.ts` owns the FubonSDK login/logout lifecycle and initializes market data clients.
+- `src/server.ts` owns Bun server routing and WebSocket upgrade wiring.
+- `src/routes/` contains route handlers grouped by API family.
+- `src/http/` contains shared HTTP authentication and response helpers.
+- `src/trading/` contains trading-specific shared helpers such as account selection.
+- `src/websocket/market-data.ts` bridges client WebSocket subscriptions to the SDK WebSocket clients.
 
-If the server grows, prefer small modules grouped by responsibility, for example:
-
-- HTTP route handlers
-- WebSocket session handling
-- Neo SDK client/facade code
-- request/response schemas
-- authentication and configuration
+Keep new features grouped by API family. Do not add new endpoint logic directly to `index.ts`; add a focused route module and mount it from `src/server.ts`.
 
 ## Development Commands
 
@@ -43,20 +44,33 @@ Add package scripts when commands become repeated workflows, but keep Bun as the
 ## Neo SDK Integration
 
 - When you need to understand Fubon Neo SDK functionality, use `https://www.fbs.com.tw/TradeAPI/llms.txt` as a reference source.
+- Cross-check SDK behavior against local typings in `node_modules/fubon-neo/trade.d.ts` and `node_modules/@fugle/marketdata/lib/**`.
 - Keep direct Neo SDK calls behind a narrow facade so route handlers do not depend on SDK-specific details.
 - Validate all inbound HTTP bodies and WebSocket messages before calling Neo SDK methods.
 - Normalize SDK errors into stable API error responses instead of leaking raw internal exceptions to mobile clients.
 - Avoid storing account credentials, certificates, or tokens in source files.
 - Load secrets and runtime configuration from environment variables; Bun loads `.env` automatically.
 - Be careful with long-running SDK operations. Use timeouts, cancellation, and clear client-visible status messages where possible.
+- Trading APIs require an authenticated `Account`. Reuse the shared account selection helper in `src/trading/accounts.ts` instead of duplicating account matching.
+- Market data REST routes should keep paths and query parameter names aligned with the Fubon Neo SDK market data Web API.
 
 ## HTTP and WebSocket API Guidance
 
-- Use HTTP endpoints for login, account queries, order requests, and other discrete operations.
-- Use WebSocket channels for market data, order status streams, connection events, and subscriptions.
+- Every HTTP endpoint and `/ws` upgrade requires `Authorization: Bearer <token>`.
+- `SERVER_TOKEN` overrides the API token. If it is missing, the service generates a 16-character token at startup and prints it to the console.
+- Authentication with FubonSDK happens at service startup using `FUBON_USER`, `FUBON_CERT`, and either `FUBON_PASSWORD` or `FUBON_APIKEY`; `FUBON_CERT_PASS` is optional.
+- Use HTTP endpoints for account queries, order status queries, market data REST calls, and other discrete operations.
+- Use `/ws` for market data streaming. Client messages should match the SDK WebSocket API shape, for example `{ "event": "subscribe", "data": { "channel": "trades", "symbol": "2330" } }`.
 - Keep payloads JSON-serializable unless a specific binary protocol is intentionally introduced.
 - Version external API paths or message envelopes before making breaking changes.
 - Document new endpoints and message formats in `README.md` or a dedicated docs file.
+
+Current route groups:
+
+- Market data REST: `/snapshot/*`, `/historical/*`, `/intraday/*`, `/technical/*`, `/corporate-actions/*`
+- Market data WebSocket: `/ws`
+- Trading accounts and accounting: `/trading/accounts`, `/trading/accounting/*`
+- Trading stock query APIs: `/trading/stock/*`
 
 ## Testing Expectations
 

@@ -1,45 +1,54 @@
 # rabang
 
-To install dependencies:
+這個服務用來把 Fubon Neo SDK 包成 HTTP / WebSocket API，讓行動 App 可以透過網路呼叫 SDK 功能，而不需要直接在行動端載入 Neo SDK。
+
+## 安裝
 
 ```bash
 bun install
 ```
 
-To run:
+## 啟動
 
 ```bash
 bun run index.ts
 ```
 
-Authentication is performed automatically at startup. Provide these environment variables:
+服務啟動時會自動登入 FubonSDK。請提供以下環境變數：
 
 ```bash
 FUBON_USER=your_personal_id
 FUBON_PASSWORD=your_password
-# or use FUBON_APIKEY instead of FUBON_PASSWORD
+# 或使用 FUBON_APIKEY 取代 FUBON_PASSWORD
 FUBON_CERT=/absolute/path/to/certificate.pfx
 FUBON_CERT_PASS=optional_certificate_password
 SERVER_TOKEN=optional_api_bearer_token
 ```
 
-The service keeps the FubonSDK session logged in while it is running and calls `logout()` during shutdown.
-If `SERVER_TOKEN` is not provided, the service generates a 16-character token at startup and prints it to the console. Use it as the API bearer token for every endpoint, including `GET /health`:
+服務執行期間會維持 FubonSDK 登入狀態，並在關閉時呼叫 `logout()`。
+
+若未提供 `SERVER_TOKEN`，服務會在啟動時產生一組 16 字元的 token，並直接印在 console。所有 HTTP endpoint 與 `/ws` WebSocket upgrade 都需要 Bearer Token：
 
 ```bash
 Authorization: Bearer <token>
 ```
 
-Source files are grouped by responsibility:
+## 專案結構
 
-- `index.ts`: service bootstrap and shutdown wiring
-- `src/config.ts`: environment variables and server token
-- `src/fubon/session.ts`: FubonSDK authentication lifecycle
-- `src/server.ts`: Bun server routing shell
-- `src/routes/`: API handlers grouped by feature
-- `src/http/`: shared HTTP authentication and response helpers
+- `index.ts`：服務啟動流程與關閉處理
+- `src/config.ts`：環境變數、HTTP port、server token
+- `src/fubon/session.ts`：FubonSDK 登入、行情初始化、登出 lifecycle
+- `src/server.ts`：Bun server 與路由分派
+- `src/routes/`：依 API 功能分組的 route handlers
+- `src/http/`：共用 HTTP authentication 與 response helpers
+- `src/trading/`：Trading API 共用 helper，例如帳戶選取
+- `src/websocket/market-data.ts`：Market Data WebSocket bridge
 
-Snapshot APIs use the same paths and parameters as the Fubon Neo SDK market data API:
+## Market Data REST API
+
+這些 API 的 path 與 query parameters 盡量維持和 Fubon Neo SDK market data Web API 一致。
+
+### Snapshot
 
 ```bash
 curl \
@@ -55,7 +64,7 @@ curl \
   "http://localhost:3000/snapshot/actives/TSE?trade=value&type=COMMONSTOCK"
 ```
 
-Historical APIs use the same paths and parameters as the Fubon Neo SDK market data API:
+### 歷史行情
 
 ```bash
 curl \
@@ -67,7 +76,7 @@ curl \
   "http://localhost:3000/historical/stats/2330"
 ```
 
-Intraday, technical, and corporate actions APIs also use the same paths and parameters as the Fubon Neo SDK market data API:
+### 日內行情、技術指標、股務事件
 
 ```bash
 curl \
@@ -87,7 +96,9 @@ curl \
   "http://localhost:3000/corporate-actions/dividends?start_date=2024-01-01&end_date=2024-12-31"
 ```
 
-Market data WebSocket clients connect to `/ws` with the same bearer token and send messages that match the Fubon Neo SDK WebSocket API shape:
+## Market Data WebSocket
+
+WebSocket client 連線到 `/ws`，同樣需要 Bearer Token。Client 傳送的 message 形狀對齊 Fubon Neo SDK WebSocket API。
 
 ```json
 {
@@ -99,7 +110,7 @@ Market data WebSocket clients connect to `/ws` with the same bearer token and se
 }
 ```
 
-Use `market: "futopt"` inside `data` to subscribe through the futures and options WebSocket client. If omitted, `market` defaults to `stock`.
+若要使用期權 WebSocket client，請在 `data` 中加入 `market: "futopt"`。未提供時預設為 `stock`。
 
 ```json
 {
@@ -110,7 +121,21 @@ Use `market: "futopt"` inside `data` to subscribe through the futures and option
 }
 ```
 
-Trading accounting APIs use the authenticated FubonSDK session. The first authenticated account is used by default; add `account`, `branchNo`, or `accountType` query parameters to select a specific account.
+使用 `websocat` 測試：
+
+```bash
+websocat -H='Authorization: Bearer <token>' ws://localhost:3000/ws
+```
+
+## Trading API
+
+Trading API 使用已登入的 FubonSDK session。預設使用登入後第一個 account；也可以用 query parameters 指定帳戶：
+
+- `account`
+- `branchNo`
+- `accountType`
+
+### 帳戶與帳務
 
 ```bash
 curl \
@@ -126,7 +151,7 @@ curl \
   "http://localhost:3000/trading/accounting/settlement?range=3d"
 ```
 
-Trading stock query APIs also use the authenticated FubonSDK session and the same account selection query parameters:
+### 股票交易查詢
 
 ```bash
 curl \
@@ -169,5 +194,3 @@ curl \
   -H "Authorization: Bearer <token>" \
   "http://localhost:3000/trading/stock/symbol-snapshot?marketType=Common&stockTypes=Stock,EtfAndEtn"
 ```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
