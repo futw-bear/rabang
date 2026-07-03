@@ -42,6 +42,7 @@ Add package scripts when commands become repeated workflows, but keep Bun as the
 
 ## Neo SDK Integration
 
+- When you need to understand Fubon Neo SDK functionality, use `https://www.fbs.com.tw/TradeAPI/llms.txt` as a reference source.
 - Keep direct Neo SDK calls behind a narrow facade so route handlers do not depend on SDK-specific details.
 - Validate all inbound HTTP bodies and WebSocket messages before calling Neo SDK methods.
 - Normalize SDK errors into stable API error responses instead of leaking raw internal exceptions to mobile clients.
