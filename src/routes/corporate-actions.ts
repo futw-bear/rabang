@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import type { ServerContext } from "../types";
 
 type CorporateActionParams = Record<string, string>;
@@ -12,21 +12,39 @@ export async function handleCorporateActions(
     return null;
   }
 
-  const corporateActions = context.session.sdk.marketdata.restClient.stock.corporateActions;
-  const params = getQueryParams(url);
-
   try {
     if (url.pathname === "/corporate-actions/capital-changes") {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const corporateActions = session.sdk.marketdata.restClient.stock.corporateActions;
+      const params = getQueryParams(url);
       const result = await corporateActions.capitalChanges(params);
       return Response.json(result);
     }
 
     if (url.pathname === "/corporate-actions/dividends") {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const corporateActions = session.sdk.marketdata.restClient.stock.corporateActions;
+      const params = getQueryParams(url);
       const result = await corporateActions.dividends(params);
       return Response.json(result);
     }
 
     if (url.pathname === "/corporate-actions/listing-applicants") {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const corporateActions = session.sdk.marketdata.restClient.stock.corporateActions;
+      const params = getQueryParams(url);
       const result = await corporateActions.listingApplicants(params);
       return Response.json(result);
     }

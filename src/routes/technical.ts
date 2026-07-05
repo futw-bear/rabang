@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import type { ServerContext } from "../types";
 
 type TechnicalParams = {
@@ -12,35 +12,63 @@ export async function handleTechnical(req: Request, url: URL, context: ServerCon
     return null;
   }
 
-  const technical = context.session.sdk.marketdata.restClient.stock.technical;
-
   try {
     const smaParams = getTechnicalParams(url, "/technical/sma");
     if (smaParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const technical = session.sdk.marketdata.restClient.stock.technical;
       const result = await technical.sma(smaParams as unknown as Parameters<typeof technical.sma>[0]);
       return Response.json(result);
     }
 
     const rsiParams = getTechnicalParams(url, "/technical/rsi");
     if (rsiParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const technical = session.sdk.marketdata.restClient.stock.technical;
       const result = await technical.rsi(rsiParams as unknown as Parameters<typeof technical.rsi>[0]);
       return Response.json(result);
     }
 
     const kdjParams = getTechnicalParams(url, "/technical/kdj");
     if (kdjParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const technical = session.sdk.marketdata.restClient.stock.technical;
       const result = await technical.kdj(kdjParams as unknown as Parameters<typeof technical.kdj>[0]);
       return Response.json(result);
     }
 
     const macdParams = getTechnicalParams(url, "/technical/macd");
     if (macdParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const technical = session.sdk.marketdata.restClient.stock.technical;
       const result = await technical.macd(macdParams as unknown as Parameters<typeof technical.macd>[0]);
       return Response.json(result);
     }
 
     const bbParams = getTechnicalParams(url, "/technical/bb");
     if (bbParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const technical = session.sdk.marketdata.restClient.stock.technical;
       const result = await technical.bb(bbParams as unknown as Parameters<typeof technical.bb>[0]);
       return Response.json(result);
     }

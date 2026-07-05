@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import type { ServerContext } from "../types";
 
 type SnapshotParams = {
@@ -10,17 +10,27 @@ export async function handleSnapshot(req: Request, url: URL, context: ServerCont
     return null;
   }
 
-  const snapshot = context.session.sdk.marketdata.restClient.stock.snapshot;
-
   try {
     const quotesParams = getSnapshotParams(url, "/snapshot/quotes");
     if (quotesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const snapshot = session.sdk.marketdata.restClient.stock.snapshot;
       const result = await snapshot.quotes(quotesParams as Parameters<typeof snapshot.quotes>[0]);
       return Response.json(result);
     }
 
     const moversParams = getSnapshotParams(url, "/snapshot/movers");
     if (moversParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const snapshot = session.sdk.marketdata.restClient.stock.snapshot;
       const result = await snapshot.movers(
         moversParams as unknown as Parameters<typeof snapshot.movers>[0]
       );
@@ -29,6 +39,12 @@ export async function handleSnapshot(req: Request, url: URL, context: ServerCont
 
     const activesParams = getSnapshotParams(url, "/snapshot/actives");
     if (activesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const snapshot = session.sdk.marketdata.restClient.stock.snapshot;
       const result = await snapshot.actives(
         activesParams as unknown as Parameters<typeof snapshot.actives>[0]
       );

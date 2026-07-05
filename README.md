@@ -14,7 +14,7 @@ bun install
 bun run index.ts
 ```
 
-服務啟動時會自動登入 FubonSDK。請提供以下環境變數：
+服務啟動後會在背景登入 FubonSDK。請提供以下環境變數：
 
 ```bash
 FUBON_USER=your_personal_id
@@ -25,7 +25,9 @@ FUBON_CERT_PASS=optional_certificate_password
 SERVER_TOKEN=optional_api_bearer_token
 ```
 
-服務執行期間會維持 FubonSDK 登入狀態，並在關閉時呼叫 `logout()`。
+服務執行期間會維持 FubonSDK 登入狀態，並在關閉時呼叫 `logout()`。即使登入失敗，HTTP/WebSocket server 仍會啟動；此時 session 狀態會進入 `reconnecting`，需要 SDK session 的 API 會回傳 `503`，`/health` 也會以 `503` 回傳目前無法正常連線的狀態訊息。
+
+登入成功後，服務會監控 SDK 底層事件作為 heartbeat。若超過 3 分鐘沒有收到 heartbeat，服務會登出目前 session 並進入 `reconnecting`。重新登入會從 5 秒後開始重試，每次將間隔拉長 10%，最多每 15 分鐘重試一次，直到登入成功為止。
 
 若未提供 `SERVER_TOKEN`，服務會在啟動時產生一組 16 字元的 token，並直接印在 console。所有 HTTP endpoint 與 `/ws` WebSocket upgrade 都需要 Bearer Token：
 
@@ -71,7 +73,7 @@ docker run --rm \
 
 - `index.ts`：服務啟動流程與關閉處理
 - `src/config.ts`：環境變數、HTTP port、server token
-- `src/fubon/session.ts`：FubonSDK 登入、行情初始化、登出 lifecycle
+- `src/fubon/session.ts`：FubonSDK 登入、行情初始化、heartbeat 監控、reconnect、登出 lifecycle
 - `src/server.ts`：Bun server 與路由分派
 - `src/routes/`：依 API 功能分組的 route handlers
 - `src/http/`：共用 HTTP authentication 與 response helpers
@@ -87,6 +89,22 @@ Authorization: Bearer <token>
 ```
 
 HTTP 查詢 API 目前皆使用 `GET`。除非表格特別註明，query parameters 會直接轉交到對應的 Fubon Neo SDK 方法；行情 REST API 的參數名稱盡量維持官方 Market Data Web API 文件命名。
+
+`GET /health` 會回傳目前 session lifecycle 狀態。登入正常時 HTTP status 是 `200`：
+
+```json
+{
+  "ok": true,
+  "message": "Fubon session is connected.",
+  "status": "authenticated",
+  "authenticated": true,
+  "accountCount": 1,
+  "lastHeartbeatAt": "2026-07-05T12:00:00.000Z",
+  "lastLoginAt": "2026-07-05T11:58:00.000Z"
+}
+```
+
+當 `status` 是 `reconnecting` 時，HTTP status 是 `503`，`ok` 會是 `false`，`message` 會告知目前無法正常連線，`lastError` 與 `nextReconnectAt` 會說明最近一次失敗原因與下一次重試時間。
 
 ## API 總覽
 

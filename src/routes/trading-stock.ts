@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import { optionalQueryParam, requireQueryParam, selectAccount } from "../trading/accounts";
 import type { ServerContext } from "../types";
 import type { BatchResult, MarketType, StockType } from "fubon-neo";
@@ -8,12 +8,21 @@ export function handleTradingStock(req: Request, url: URL, context: ServerContex
     return null;
   }
 
-  const account = selectAccount(url, context.session.accounts);
+  if (!url.pathname.startsWith("/trading/stock/")) {
+    return null;
+  }
+
+  const session = context.sessionManager.getSession();
+  if (!session) {
+    return serviceUnavailableResponse("Fubon session is reconnecting.");
+  }
+
+  const account = selectAccount(url, session.accounts);
   if (account instanceof Response) {
     return account;
   }
 
-  const stock = context.session.sdk.stock;
+  const stock = session.sdk.stock;
 
   try {
     if (url.pathname === "/trading/stock/order-results") {

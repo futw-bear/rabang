@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import type { ServerContext } from "../types";
 
 type HistoricalParams = {
@@ -10,11 +10,15 @@ export async function handleHistorical(req: Request, url: URL, context: ServerCo
     return null;
   }
 
-  const historical = context.session.sdk.marketdata.restClient.stock.historical;
-
   try {
     const candlesParams = getHistoricalParams(url, "/historical/candles");
     if (candlesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const historical = session.sdk.marketdata.restClient.stock.historical;
       const result = await historical.candles(
         candlesParams as unknown as Parameters<typeof historical.candles>[0]
       );
@@ -23,6 +27,12 @@ export async function handleHistorical(req: Request, url: URL, context: ServerCo
 
     const statsParams = getHistoricalParams(url, "/historical/stats");
     if (statsParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const historical = session.sdk.marketdata.restClient.stock.historical;
       const result = await historical.stats(
         statsParams as Parameters<typeof historical.stats>[0]
       );

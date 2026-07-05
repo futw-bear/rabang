@@ -26,3 +26,12 @@ export function upstreamErrorResponse(error: unknown): Response {
     { status: 502 }
   );
 }
+
+export function serviceUnavailableResponse(message: string): Response {
+  return Response.json(
+    {
+      error: message,
+    },
+    { status: 503 }
+  );
+}

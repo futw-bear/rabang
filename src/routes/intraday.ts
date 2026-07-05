@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import type { ServerContext } from "../types";
 
 type IntradayParams = Record<string, string | number | boolean>;
@@ -11,10 +11,14 @@ export async function handleIntraday(req: Request, url: URL, context: ServerCont
     return null;
   }
 
-  const intraday = context.session.sdk.marketdata.restClient.stock.intraday;
-
   try {
     if (url.pathname === "/intraday/tickers") {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.tickers(
         getQueryParams(url) as unknown as Parameters<typeof intraday.tickers>[0]
       );
@@ -23,18 +27,36 @@ export async function handleIntraday(req: Request, url: URL, context: ServerCont
 
     const tickerParams = getSymbolParams(url, "/intraday/ticker");
     if (tickerParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.ticker(tickerParams as unknown as Parameters<typeof intraday.ticker>[0]);
       return Response.json(result);
     }
 
     const quoteParams = getSymbolParams(url, "/intraday/quote");
     if (quoteParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.quote(quoteParams as unknown as Parameters<typeof intraday.quote>[0]);
       return Response.json(result);
     }
 
     const candlesParams = getSymbolParams(url, "/intraday/candles");
     if (candlesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.candles(
         candlesParams as unknown as Parameters<typeof intraday.candles>[0]
       );
@@ -43,12 +65,24 @@ export async function handleIntraday(req: Request, url: URL, context: ServerCont
 
     const tradesParams = getSymbolParams(url, "/intraday/trades");
     if (tradesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.trades(tradesParams as unknown as Parameters<typeof intraday.trades>[0]);
       return Response.json(result);
     }
 
     const volumesParams = getSymbolParams(url, "/intraday/volumes");
     if (volumesParams) {
+      const session = context.sessionManager.getSession();
+      if (!session) {
+        return serviceUnavailableResponse("Fubon session is reconnecting.");
+      }
+
+      const intraday = session.sdk.marketdata.restClient.stock.intraday;
       const result = await intraday.volumes(
         volumesParams as unknown as Parameters<typeof intraday.volumes>[0]
       );

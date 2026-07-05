@@ -1,4 +1,4 @@
-import { upstreamErrorResponse } from "../http/responses";
+import { serviceUnavailableResponse, upstreamErrorResponse } from "../http/responses";
 import { optionalQueryParam, requireQueryParam, selectAccount } from "../trading/accounts";
 import type { ServerContext } from "../types";
 
@@ -7,17 +7,26 @@ export function handleTradingAccounting(req: Request, url: URL, context: ServerC
     return null;
   }
 
-  if (url.pathname === "/trading/accounts") {
-    return Response.json(context.session.accounts);
+  if (url.pathname !== "/trading/accounts" && !url.pathname.startsWith("/trading/accounting/")) {
+    return null;
   }
 
-  const account = selectAccount(url, context.session.accounts);
+  const session = context.sessionManager.getSession();
+  if (!session) {
+    return serviceUnavailableResponse("Fubon session is reconnecting.");
+  }
+
+  if (url.pathname === "/trading/accounts") {
+    return Response.json(session.accounts);
+  }
+
+  const account = selectAccount(url, session.accounts);
   if (account instanceof Response) {
     return account;
   }
 
   try {
-    const accounting = context.session.sdk.accounting;
+    const accounting = session.sdk.accounting;
 
     if (url.pathname === "/trading/accounting/unrealized-gains-and-loses") {
       return Response.json(accounting.unrealizedGainsAndLoses(account));

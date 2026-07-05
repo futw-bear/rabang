@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import type { ServerContext } from "../types";
+import type { AuthenticatedSession, ServerContext } from "../types";
 
 type MarketDataSocketData = {
   clientId: string;
@@ -31,6 +31,7 @@ export class MarketDataWebSocketBridge {
   private readonly clients = new Set<MarketDataClient>();
   private stockConnected?: Promise<unknown>;
   private futoptConnected?: Promise<unknown>;
+  private activeSession?: AuthenticatedSession;
   private listenersAttached = false;
 
   constructor(private readonly context: ServerContext) {}
@@ -63,24 +64,28 @@ export class MarketDataWebSocketBridge {
     try {
       if (event === "subscribe") {
         await this.ensureConnected(market);
-        this.getSdkClient(market).subscribe(toSdkSubscribeParams(data));
+        const session = this.requireSession();
+        this.getSdkClient(session, market).subscribe(toSdkSubscribeParams(data));
         this.sendJson(ws, { event: "subscribed", data });
         return;
       }
 
       if (event === "unsubscribe") {
-        this.getSdkClient(market).unsubscribe(toSdkUnsubscribeParams(data));
+        const session = this.requireSession();
+        this.getSdkClient(session, market).unsubscribe(toSdkUnsubscribeParams(data));
         this.sendJson(ws, { event: "unsubscribed", data });
         return;
       }
 
       if (event === "subscriptions") {
-        this.getSdkClient(market).subscriptions();
+        const session = this.requireSession();
+        this.getSdkClient(session, market).subscriptions();
         return;
       }
 
       if (event === "ping") {
-        this.getSdkClient(market).ping({ state: data.state });
+        const session = this.requireSession();
+        this.getSdkClient(session, market).ping({ state: data.state });
         return;
       }
 
@@ -91,30 +96,43 @@ export class MarketDataWebSocketBridge {
   }
 
   private async ensureConnected(market: Market) {
-    this.attachSdkListeners();
+    const session = this.requireSession();
+    this.useSession(session);
+    this.attachSdkListeners(session);
 
     if (market === "stock") {
-      this.stockConnected ??= this.getSdkClient("stock").connect();
+      this.stockConnected ??= this.getSdkClient(session, "stock").connect();
       await this.stockConnected;
       return;
     }
 
-    this.futoptConnected ??= this.getSdkClient("futopt").connect();
+    this.futoptConnected ??= this.getSdkClient(session, "futopt").connect();
     await this.futoptConnected;
   }
 
-  private attachSdkListeners() {
+  private useSession(session: AuthenticatedSession) {
+    if (this.activeSession === session) {
+      return;
+    }
+
+    this.activeSession = session;
+    this.stockConnected = undefined;
+    this.futoptConnected = undefined;
+    this.listenersAttached = false;
+  }
+
+  private attachSdkListeners(session: AuthenticatedSession) {
     if (this.listenersAttached) {
       return;
     }
 
     this.listenersAttached = true;
-    this.attachClientListeners("stock");
-    this.attachClientListeners("futopt");
+    this.attachClientListeners(session, "stock");
+    this.attachClientListeners(session, "futopt");
   }
 
-  private attachClientListeners(market: Market) {
-    const client = this.getSdkClient(market);
+  private attachClientListeners(session: AuthenticatedSession, market: Market) {
+    const client = this.getSdkClient(session, market);
 
     client.on("message", (message: string) => {
       this.broadcastRaw(message);
@@ -137,8 +155,17 @@ export class MarketDataWebSocketBridge {
     });
   }
 
-  private getSdkClient(market: Market) {
-    const webSocketClient = this.context.session.sdk.marketdata.webSocketClient;
+  private requireSession(): AuthenticatedSession {
+    const session = this.context.sessionManager.getSession();
+    if (!session) {
+      throw new Error("Fubon session is reconnecting.");
+    }
+
+    return session;
+  }
+
+  private getSdkClient(session: AuthenticatedSession, market: Market) {
+    const webSocketClient = session.sdk.marketdata.webSocketClient;
     return (market === "stock" ? webSocketClient.stock : webSocketClient.futopt) as SdkMarketDataClient;
   }
 
