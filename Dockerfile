@@ -16,6 +16,7 @@ RUN bun install --frozen-lockfile
 
 COPY index.ts tsconfig.json ./
 COPY src ./src
+COPY cert ./cert
 
 RUN mkdir -p /certs
 

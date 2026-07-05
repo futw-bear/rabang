@@ -18,7 +18,11 @@ export async function authenticate(
   options: AuthenticateOptions = {}
 ): Promise<AuthenticatedSession> {
   const { FubonSDK } = await import("fubon-neo");
-  const sdk = new FubonSDK(30, 6);
+  const sdk = new FubonSDK(
+    config.sdkOptions?.pongInterval ?? 30,
+    config.sdkOptions?.missedCount ?? 6,
+    config.sdkOptions?.url
+  );
   const response =
     config.secretKind === "apiKey"
       ? sdk.apikeyLogin(config.user, config.secret, config.certPath, config.certPass)
@@ -132,11 +136,18 @@ export class SessionManager {
     );
 
     void Promise.resolve()
-      .then(() =>
-        authenticate(this.readConfig(), {
+      .then(() => {
+        const config = this.readConfig();
+        console.info(
+          `Fubon authentication config loaded: environment=${
+            config.isTestEnv ? "test" : "configured"
+          }, secretKind=${config.secretKind}`
+        );
+
+        return authenticate(config, {
           onHeartbeat: () => this.markHeartbeat(),
-        })
-      )
+        });
+      })
       .then((session) => {
         if (this.status === "stopped") {
           session.logout();

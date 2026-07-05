@@ -25,6 +25,14 @@ FUBON_CERT_PASS=optional_certificate_password
 SERVER_TOKEN=optional_api_bearer_token
 ```
 
+若要使用官方測試伺服器與測試帳號登入，可以改用：
+
+```bash
+FUBON_TESTENV=1 bun run index.ts
+```
+
+`FUBON_TESTENV=1` 會使用 `new FubonSDK(30, 2, "wss://neoapitest.fbs.com.tw/TASP/XCPXWS")`，並套用官方測試帳號、密碼與 `./cert/41610792.pfx` 測試憑證；此模式不需要設定 `FUBON_USER`、`FUBON_PASSWORD`、`FUBON_CERT` 或 `FUBON_CERT_PASS`。如果測試憑證暫時不存在或登入失敗，服務仍會啟動並進入 reconnect 狀態，依照同一套重試間隔持續嘗試登入。
+
 服務執行期間會維持 FubonSDK 登入狀態，並在關閉時呼叫 `logout()`。即使登入失敗，HTTP/WebSocket server 仍會啟動；此時 session 狀態會進入 `reconnecting`，需要 SDK session 的 API 會回傳 `503`，`/health` 也會以 `503` 回傳目前無法正常連線的狀態訊息。
 
 登入成功後，服務會監控 SDK 底層事件作為 heartbeat。若超過 3 分鐘沒有收到 heartbeat，服務會登出目前 session 並進入 `reconnecting`。重新登入會從 5 秒後開始重試，每次將間隔拉長 10%，最多每 15 分鐘重試一次，直到登入成功為止。
